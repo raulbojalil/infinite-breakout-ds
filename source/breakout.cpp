@@ -14,6 +14,9 @@ u8 gameOver;
 uint ticks;
 u8 playing;
 
+s16 lastBallPosX;
+s16 lastBallPosY;
+
 uint newBricksSpeedTicks;
 
 
@@ -108,10 +111,11 @@ void reset()
 	paddle.rect.y = SCREEN_HEIGHT - paddle.rect.h - PADDLE_Y_BOTTOM_OFFSET;
 	paddle.color = COLOR_YELLOW;
 	
-	ball.rect.x = (SCREEN_WIDTH/2) - (ball.rect.w/2);
-	ball.rect.y = paddle.rect.y - ball.rect.h - BALL_Y_BOTTOM_OFFSET;
 	ball.rect.w = BALL_SIZE;
 	ball.rect.h = BALL_SIZE;
+	ball.rect.x = (SCREEN_WIDTH/2) - (ball.rect.w/2);
+	ball.rect.y = paddle.rect.y - ball.rect.h - BALL_Y_BOTTOM_OFFSET;
+	
 	
 	//float angle = getAngleBetweenPoints(0, 20, 20,0);
 	
@@ -120,15 +124,11 @@ void reset()
 	ball.color = COLOR_YELLOW;
 	
 	u8 i;
-	u8 row = 0;
-	u8 col = 0;
+	//u8 row = 0;
+	//u8 col = 0;
 	for(i=0; i < MAX_BRICKS; ++i)
 	{
 		Brick brick;
-		brick.rect.w = BRICK_WIDTH;
-		brick.rect.h = BRICK_HEIGHT;
-		brick.rect.x = col*brick.rect.w;
-		brick.rect.y = row;
 		
 		if(i < STARTING_BRICKS)		
 			brick.alive = 1;
@@ -136,15 +136,6 @@ void reset()
 		
 		brick.color = RANDOM_COLOR;
 		bricks[i] = brick;
-		
-		col++;
-		
-		if(col == SCREEN_WIDTH/brick.rect.w)
-		{
-			col = 0;
-			row += brick.rect.h;
-		}
-		
 	}
 	
 	consoleClear();
@@ -170,57 +161,95 @@ void handleBallPaddleCollision(Ball* ball, Paddle* paddle)
 
 		ball->sx = cos(collisionAngle)*BALL_SPEED;
 		ball->sy = -sin(collisionAngle)*BALL_SPEED;
-
-		//s16 distance = (ball.rect.x + ball.rect.w/2) - (paddle.rect.x + paddle.rect.w/2);
-			
-		/*float collisionAngle = (45 * distance) / (paddle.rect.w/2);
-		
-		ball.sx = cos(collisionAngle)*4;
-		ball.sy = -sin(collisionAngle)*4;*/
 	}
 }
 
 void handleBallBricksCollisions(Ball* ball)
 {
-	u8 numColls = 0;
+	u8 leftEdge = 0;
+	u8 topEdge = 0;
+	u8 rightEdge = 0;
+	u8 bottomEdge = 0;
+	s16 collidingBrickIndex = -1;
+	
+	u8 row;
+	u8 col;
 	u8 i;
-	for(i=0; i < MAX_BRICKS; ++i)
+
+	for(row=0; row < FIELD_HEIGHT; ++row)
 	{
-		if(bricks[i].alive && rectsCollide(bricks[i].rect, ball->rect))
+		for(col=0; col < FIELD_WIDTH; ++col)
 		{
-			bricks[i].alive = 0;
-			numColls++;
-			
-			s16 l = getDistanceOfLineInRect(ball->rect, bricks[i].rect.x, bricks[i].rect.y, bricks[i].rect.x, bricks[i].rect.y + bricks[i].rect.h);
-			s16 t = getDistanceOfLineInRect(ball->rect, bricks[i].rect.x, bricks[i].rect.y, bricks[i].rect.x + bricks[i].rect.w, bricks[i].rect.y);
-			s16 r = getDistanceOfLineInRect(ball->rect, bricks[i].rect.x + bricks[i].rect.w, bricks[i].rect.y, bricks[i].rect.x + bricks[i].rect.w, bricks[i].rect.y + bricks[i].rect.h);
-			s16 b = getDistanceOfLineInRect(ball->rect, bricks[i].rect.x, bricks[i].rect.y + bricks[i].rect.h, bricks[i].rect.x + bricks[i].rect.w, bricks[i].rect.y + bricks[i].rect.h);
-			
-			u8 edge = 1; s16 max = t;
-			if(l > t) { edge = 0; max = l; }
-			if(r > max) { edge = 2; max = r; }
-			if(b > max) { edge = 3; max = b; }
-			
-			if(edge == 0 || edge == 2) //izquierda o derecha
-				ball->sx*=-1;
-			else 
-				ball->sy*=-1; //arriba o abajo
-			
-			score++;
-			
-			if(score % NEW_BRICKS_SCORE == 0)	
+			i = (row*FIELD_WIDTH) + col;
+
+			if(bricks[i].alive)
 			{
-				if(newBricksSpeedTicks >= NEW_BRICKS_MAX_SPEED_TICKS)
-					newBricksSpeedTicks -= 	NEW_BRICKS_ACCEL_TICKS;
-			}
-				
-			iprintf("\x1b[1;1HScore = %05i\n", score);
+				u8 brickX = col*BRICK_WIDTH;
+				u8 brickY = row*BRICK_HEIGHT;
 			
+				if((brickY + BRICK_HEIGHT) < ball->rect.y) continue;
+				if((ball->rect.y + BALL_SIZE) < brickY) continue;
+				if((brickX + BRICK_WIDTH) < ball->rect.x) continue;
+				if((ball->rect.x + BALL_SIZE) < brickX) continue;
+		
+				if(ball->rect.x < brickX)
+				{
+					u8 d = getDistanceOfLineInRect(ball->rect, brickX, brickY, brickX, brickY + BRICK_HEIGHT);
+					if(d > leftEdge) { collidingBrickIndex = i; leftEdge = d; }
+				}
+
+				if(ball->rect.y < brickY)
+				{
+					u8 d = getDistanceOfLineInRect(ball->rect, brickX, brickY, brickX + BRICK_WIDTH, brickY);
+					if(d > topEdge) { collidingBrickIndex = i; topEdge = d; }
+				}
+
+				if(ball->rect.x > brickX)
+				{
+					u8 d = getDistanceOfLineInRect(ball->rect, brickX + BRICK_WIDTH, brickY, brickX + BRICK_WIDTH, brickY + BRICK_HEIGHT); 
+					if(d > rightEdge) { collidingBrickIndex = i; rightEdge = d; } 
+				}
+
+				if(ball->rect.y > brickY)
+				{
+					u8 d = 	getDistanceOfLineInRect(ball->rect, brickX, brickY + BRICK_HEIGHT, brickX + BRICK_WIDTH, brickY + BRICK_HEIGHT);
+					if(d > bottomEdge) { collidingBrickIndex = i; bottomEdge = d; }
+				}
+			}
 		}
 	}
+
+	if(collidingBrickIndex != -1)
+	{
+		bricks[collidingBrickIndex].alive = 0;
+		ball->rect.x = lastBallPosX;
+		ball->rect.y = lastBallPosY;
+
+		u8 edge = 1; 
+		s16 max = topEdge;
+		if(leftEdge > topEdge) { edge = 0; max = leftEdge; }
+		if(rightEdge > max) { edge = 2; max = rightEdge; }
+		if(bottomEdge > max) { edge = 3; }
+			
+		if(edge == 0 || edge == 2) //izquierda o derecha
+			ball->sx*=-1;
+		else 
+			ball->sy*=-1; //arriba o abajo
+			
+		score++;
+			
+		if(score % NEW_BRICKS_SCORE == 0)	
+		{
+			if(newBricksSpeedTicks >= NEW_BRICKS_MAX_SPEED_TICKS)
+				newBricksSpeedTicks -= 	NEW_BRICKS_ACCEL_TICKS;
+		}
+				
+		iprintf("\x1b[1;1HScore = %05i\n", score);
+	}
 	
-	/*if(numColls > 1)
-		iprintf("%d", numColls);*/
+	lastBallPosX = ball->rect.x;
+	lastBallPosY = ball->rect.y;
+
 }
 
 void addNewBricks()
@@ -230,24 +259,22 @@ void addNewBricks()
 	if(ticks > newBricksSpeedTicks)
 	{
 		ticks = 0;
+		s16 i;
 
-		u8 bricksLeftToAdd = 4;
-		u8 i;
-
-		for(i=0; i < MAX_BRICKS; ++i)
+		for(i=MAX_BRICKS-1; i >= 0; i--)
 		{
 			if(bricks[i].alive)
 			{
-				bricks[i].rect.y += bricks[i].rect.h;
-				
+				if(i+FIELD_WIDTH >= MAX_BRICKS) return; 
+				bricks[i+FIELD_WIDTH] = bricks[i];
+				bricks[i].alive = 0;	
 			}
-			else if(bricksLeftToAdd > 0)
-			{
-				bricks[i].alive = true;
-				bricks[i].rect.x = (bricksLeftToAdd-1)*bricks[i].rect.w;
-				bricks[i].rect.y = 0;
-				bricksLeftToAdd --;
-			}
+		}
+		
+		for(i=0; i < FIELD_WIDTH; i++)
+		{
+			bricks[i].alive = 1;
+			bricks[i].color = RANDOM_COLOR;
 		}
 	
 	}
@@ -283,9 +310,9 @@ void drawPaddle(const Paddle& paddle)
 	drawFilledRect(paddle.rect.x, paddle.rect.y, paddle.rect.w, paddle.rect.h, paddle.color);
 }
  
-void drawBrick(const Brick& brick)
+void drawBrick(u8 row, u8 col, const Brick& brick)
 {
-	drawFilledRect(brick.rect.x, brick.rect.y, brick.rect.w, brick.rect.h, brick.color);
+	drawFilledRect(col * BRICK_WIDTH, row * BRICK_HEIGHT, BRICK_WIDTH, BRICK_HEIGHT, brick.color);
 }
 
 void drawBall(const Ball& ball)
@@ -300,11 +327,15 @@ void breakoutDraw()
 	drawPaddle(paddle);
 	drawBall(ball);
 	
-	u8 i;
-	for(i=0; i < MAX_BRICKS; ++i)
+	u8 row;
+	u8 col;
+	for(row=0; row < FIELD_HEIGHT; ++row)
 	{
-		if(bricks[i].alive)
-			drawBrick(bricks[i]);
+		for(col=0; col < FIELD_WIDTH; ++col)
+		{
+			if(bricks[(row*FIELD_WIDTH) + col].alive)
+				drawBrick(row, col, bricks[(row*FIELD_WIDTH) + col]);
+		}
 	}
 
 	render();

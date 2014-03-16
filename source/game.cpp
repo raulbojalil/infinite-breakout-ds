@@ -60,13 +60,14 @@ void updateKeys()
 	   paddleAccel = paddle - lastPaddle;
 	   lastPaddle = paddle;
 	   
-	   if(paddleAccel > 4000) //i
-			paddleAccel = (4096 - paddle) + lastPaddle;
+		if(paddleAccel > 4000) //i
+			paddleAccel = -15;
+			//paddleAccel = (4096 - paddle) + lastPaddle;
 		else if(paddleAccel < -4000) //d
-			paddleAccel = (4096 - lastPaddle) + paddle;
-	  
-	   
-	   //if(paddleAccel != 0 && paddleAccel != -5 && paddleAccel != 5 && paddleAccel != -10 && paddleAccel != 10 && paddleAccel != 15 && paddleAccel != -15)
+			//paddleAccel = (4096 - lastPaddle) + paddle;
+			paddleAccel = 15;
+
+	   //if(paddleAccel != 0 && paddleAccel != -5 && paddleAccel != 5 && paddleAccel != -10 && paddleAccel != 10 && paddleAccel != 15 && paddleAccel != -15 && paddleAccel != 20 && paddleAccel != -20)
 	   //iprintf("%d", paddleAccel);
 	   //iprintf("\x1b[14;10H%d       \n", paddleAccel);
 	   

@@ -4,7 +4,7 @@
 #include <nds.h>
 #include "collision.h"
 
-#define NEW_BRICKS_SPEED_TICKS 500000
+#define NEW_BRICKS_SPEED_TICKS 300000
 #define NEW_BRICKS_ACCEL_TICKS 25000
 #define NEW_BRICKS_MAX_SPEED_TICKS 100000
 #define NEW_BRICKS_SCORE 5
@@ -24,10 +24,12 @@
 #define BRICK_WIDTH 64
 #define BRICK_HEIGHT 20
 
+#define FIELD_WIDTH (SCREEN_WIDTH >> 6)
+#define FIELD_HEIGHT (MAX_BRICKS/FIELD_WIDTH)
+
  
 typedef struct{
  
-	Rectangle rect;
 	u8 alive;
 	u16 color;
 	
