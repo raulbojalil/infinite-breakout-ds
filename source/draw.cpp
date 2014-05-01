@@ -1,3 +1,24 @@
+/*
+    Infinite Breakout DS - An infinite breakout clone for the Nintendo DS
+    Copyright (C) 2009,2014 Raúl A. Bojalil Becerra
+
+    This file is part of Infinite Breakout DS.
+
+    Infinite Breakout DS is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Infinite Breakout DS is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Infinite Breakout DS. If not, see <http://www.gnu.org/licenses/>.
+
+*/
+
 #include "draw.h"
 #include <nds.h>
 #include <math.h>
@@ -67,18 +88,6 @@ void render()
 	}
 }
 
-/*void drawCircle(u8 rx, u8 ry, u8 radio, u16 color)
-{
-	u8 x,y;
-	double d;//detail
-	const double pi = 3.14159265; //more or less
-	for(d=0; d<=2*pi; d+=0.01) //you can play with the value to be added to d
-	{
-		x=rx+(1*sin(d))*radio;
-		y=ry+(1*sin(d+(pi/2)))*radio;
-		drawPixel(x,y, color);
-	}
-}*/
 
 void drawFilledCircle(u8 rx, u8 ry, u8 radius, u16 color)
 {
@@ -90,62 +99,51 @@ void drawFilledCircle(u8 rx, u8 ry, u8 radius, u16 color)
 
 void drawLine(u16 x1, u16 y1, u16 x2, u16 y2, u16 color)
 {
-    int yStep = SCREEN_WIDTH;
-    int xStep = 1;      
-    int xDiff = x2 - x1;
-    int yDiff = y2 - y1;
-	int i = 0;
-    int errorTerm = 0;
-    int offset = y1 * SCREEN_WIDTH + x1; 
+    s32 yStep = SCREEN_WIDTH;
+    s32 xStep = 1;      
+    s32 xDiff = x2 - x1;
+    s32 yDiff = y2 - y1;
+	s32 i = 0;
+    s32 error = 0;
+    s32 offset = y1 * SCREEN_WIDTH + x1; 
     
-    //need to adjust if y1 > y2
     if (yDiff < 0)       
     {                  
-       yDiff = -yDiff;   //absolute value
-       yStep = -yStep;   //step up instead of down   
+       yDiff = -yDiff;
+       yStep = -yStep;  
     }
     
-    //same for x
     if (xDiff < 0) 
     {           
        xDiff = -xDiff;            
        xStep = -xStep;            
     }        
  
-    //case for changes more in X than in Y	 
     if (xDiff > yDiff) 
     {                            
        for (i = 0; i < xDiff + 1; i++)
        {                           
           VRAM_A[offset] = color;  
- 
           offset += xStep;           
- 
-          errorTerm += yDiff;     
- 
-          if (errorTerm > xDiff) 
+          error += yDiff;     
+          if (error > xDiff) 
           {  
-             errorTerm -= xDiff;     
+             error -= xDiff;     
              offset += yStep;        
           }
        }
-    }//end if xdiff > ydiff
-    //case for changes more in Y than in X
+    }
     else 
     {                       
        for (i = 0; i < yDiff + 1; i++) 
        {  
           VRAM_A[offset] = color;   
- 
           offset += yStep;           
- 
-          errorTerm += xDiff;    
- 
-          if (errorTerm > yDiff) 
+          error += xDiff;    
+          if (error > yDiff) 
           {     
-             errorTerm -= yDiff;  
-             offset += xStep;     
- 
+             error -= yDiff;  
+             offset += xStep;
           }
        }
     }
@@ -172,29 +170,6 @@ void drawFilledRect(s16 x, s16 y, u8 w, u8 h, u16 color){
 		{
 			if(xp > 0 && xp < SCREEN_WIDTH && yp > 0 && yp < SCREEN_HEIGHT)
 				drawPixel(xp, yp, color);
-				//VRAM_A[xp + (yp*SCREEN_WIDTH)] = RGB15(31,31,31);
 		}
 	}
-
-    /*u8 yp = y;
-	u8 xp = x;
-	
-	for(yp=y; yp < y+h; ++yp )
-	{
-		
-		for(xp=x; xp < x+w; ++xp )
-		{
-			if(xp == SCREEN_WIDTH - 1)
-				break;
-			
-			drawPixel(xp, yp, color);
-			//VRAM_A[xp + (yp*SCREEN_WIDTH)] = RGB15(31,31,31);
-		}
-	}*/
-
 }
- 
-/*void draw_rect(u8 x, u8 y, u8 w, u8 h)
-{
-	
-}*/
